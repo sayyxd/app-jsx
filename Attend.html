@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attend</title>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#eef2f7;padding:24px;color:#222}
+.app{max-width:900px;margin:auto;background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 25px rgba(0,0,0,.1)}
+.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+select{padding:10px;border-radius:8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}
+.card{background:#f5f7fb;padding:12px;border-radius:12px;text-align:center}
+.bar{height:10px;background:#ddd;border-radius:8px;overflow:hidden}
+.fill{height:100%;background:#4caf50;width:0%}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.dayname,.day{padding:12px;text-align:center;border-radius:10px}
+.dayname{font-weight:bold}
+.day{background:#f5f5f5;cursor:pointer}
+.present{background:#4caf50;color:#fff}
+.absent{background:#e53935;color:#fff}
+.leave{background:#ffc107}
+.empty{visibility:hidden}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Attend</h1>
+<div class="top">
+<select id="month"></select>
+<select id="scope">
+<option>Month</option>
+<option>Quarter</option>
+<option>Semester</option>
+</select>
+</div>
+
+<div class="stats">
+<div class="card"><h3 id="p">0</h3><small>Present</small></div>
+<div class="card"><h3 id="a">0</h3><small>Absent</small></div>
+<div class="card"><h3 id="l">0</h3><small>Leave</small></div>
+<div class="card"><h3 id="per">0%</h3><small>Attendance</small></div>
+</div>
+<div class="bar"><div class="fill" id="fill"></div></div>
+<br>
+<div class="calendar" id="cal"></div>
+</div>
+
+<script>
+const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const msel=document.getElementById("month");
+months.forEach((m,i)=>msel.add(new Option(m,i)));
+msel.value=new Date().getMonth();
+
+function key(){return "attend-"+msel.value}
+function load(){return JSON.parse(localStorage.getItem(key())||"{}")}
+function save(d){localStorage.setItem(key(),JSON.stringify(d))}
+function render(){
+ const cal=document.getElementById("cal");
+ cal.innerHTML="";
+ ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(x=>{
+  let e=document.createElement("div");e.className="dayname";e.textContent=x;cal.appendChild(e);
+ });
+ let y=new Date().getFullYear(),m=+msel.value;
+ let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+ for(let i=0;i<first;i++){let e=document.createElement("div");e.className="empty";cal.appendChild(e);}
+ let data=load();
+ for(let d=1;d<=days;d++){
+   let e=document.createElement("div");
+   e.className="day";
+   let st=data[d]||0;
+   if(st==1)e.classList.add("present");
+   if(st==2)e.classList.add("absent");
+   if(st==3)e.classList.add("leave");
+   e.textContent=d;
+   e.onclick=()=>{
+      st=(st+1)%4;
+      if(st===0)delete data[d]; else data[d]=st;
+      save(data);render();
+   };
+   cal.appendChild(e);
+ }
+ update();
+}
+function update(){
+ let p=0,a=0,l=0;
+ let data=load();
+ Object.values(data).forEach(v=>{if(v==1)p++;if(v==2)a++;if(v==3)l++;});
+ let perc=(p+a)?((p/(p+a))*100).toFixed(1):0;
+ pEl.textContent=p;aEl.textContent=a;lEl.textContent=l;
+ per.textContent=perc+"%";
+ fill.style.width=perc+"%";
+}
+const pEl=document.getElementById("p"),aEl=document.getElementById("a"),lEl=document.getElementById("l"),per=document.getElementById("per");
+msel.onchange=render;
+render();
+</script>
+</body>
+</html>
